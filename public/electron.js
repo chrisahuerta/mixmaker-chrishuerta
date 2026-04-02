@@ -157,89 +157,146 @@ ipcMain.handle('generate-mix', async (event, config) => {
   }
 });
 
+// =====================================================
+// EXPORT MIX - Uses raw ffmpeg command for reliability
+// Normalizes ALL songs to 44100 Hz, stereo, 192kbps
+// This prevents static/glitches between songs
+// =====================================================
 ipcMain.handle('export-mix', async (event, config) => {
   try {
-    const ffmpeg = require('fluent-ffmpeg');
     const ffmpegPath = getFFmpegPath();
     if (!ffmpegPath) return { success: false, error: 'FFmpeg no encontrado' };
-    ffmpeg.setFfmpegPath(ffmpegPath);
 
     const { songs, outputPath, mixName, genre } = config;
     if (!songs || songs.length === 0) return { success: false, error: 'No hay canciones' };
     if (!outputPath) return { success: false, error: 'No se seleccionó carpeta de exportación' };
 
     const { v4: uuidv4 } = require('uuid');
-    const concatFile = path.join(outputPath, `.mix_${uuidv4()}.txt`);
-    let concatContent = '';
+    const { execFile } = require('child_process');
 
-    for (const song of songs) {
-      // On Windows, backslashes in paths need to be escaped or converted
-      const safePath = song.path.replace(/\\/g, '/').replace(/'/g, "\\'");
-      concatContent += `file '${safePath}'\n`;
-    }
-
-    console.log('Concat file:', concatFile);
-    console.log('Output path:', outputPath);
-    await fs.writeFile(concatFile, concatContent, 'utf-8');
     const outputFile = path.join(outputPath, `${mixName}.mp3`);
 
-    return new Promise((resolve) => {
-      ffmpeg()
-        .input(concatFile)
-        .inputOption('-f concat')
-        .inputOption('-safe 0')
-        .audioCodec('libmp3lame')
-        .audioBitrate('192k')
-        .output(outputFile)
-        .on('end', async () => {
-          try {
-            await fs.unlink(concatFile);
+    // Step 1: Convert each song to a normalized WAV temp file
+    // This ensures ALL songs have the same sample rate, channels, and format
+    const tempDir = path.join(outputPath, `.mixmaker_temp_${uuidv4()}`);
+    await fs.mkdir(tempDir, { recursive: true });
 
-            // Generate tracklist .txt
-            const tracklistFile = path.join(outputPath, `${mixName}_tracklist.txt`);
-            const totalDur = songs.reduce((sum, s) => sum + s.duration, 0);
-            const totalMin = Math.floor(totalDur / 60);
-            const totalSec = totalDur % 60;
-            let tracklistContent = `═══════════════════════════════════════\n`;
-            tracklistContent += `  MixMaker - ${mixName}\n`;
-            tracklistContent += `═══════════════════════════════════════\n`;
-            tracklistContent += `  Genero: ${genre || 'Sin genero'}\n`;
-            tracklistContent += `  Canciones: ${songs.length}\n`;
-            tracklistContent += `  Duracion total: ${totalMin}:${totalSec.toString().padStart(2, '0')}\n`;
-            tracklistContent += `  Fecha: ${new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}\n`;
-            tracklistContent += `═══════════════════════════════════════\n\n`;
+    console.log('=== EXPORT START ===');
+    console.log(`Songs: ${songs.length}, Output: ${outputFile}`);
+    console.log(`Temp dir: ${tempDir}`);
 
-            let elapsed = 0;
-            songs.forEach((song, i) => {
-              const eMin = Math.floor(elapsed / 60);
-              const eSec = elapsed % 60;
-              const timestamp = `${eMin}:${eSec.toString().padStart(2, '0')}`;
-              const dMin = Math.floor(song.duration / 60);
-              const dSec = song.duration % 60;
-              const duration = `${dMin}:${dSec.toString().padStart(2, '0')}`;
-              tracklistContent += `  ${String(i + 1).padStart(2, '0')}. [${timestamp}] ${song.title} - ${song.artist} (${duration})\n`;
-              elapsed += song.duration;
-            });
+    const tempFiles = [];
 
-            tracklistContent += `\n═══════════════════════════════════════\n`;
-            tracklistContent += `  Generado con MixMaker v2\n`;
-            tracklistContent += `═══════════════════════════════════════\n`;
+    for (let i = 0; i < songs.length; i++) {
+      const song = songs[i];
+      const tempFile = path.join(tempDir, `part_${String(i).padStart(4, '0')}.wav`);
+      tempFiles.push(tempFile);
 
-            await fs.writeFile(tracklistFile, tracklistContent, 'utf-8');
-            console.log(`Mix exported: ${outputFile}`);
-            console.log(`Tracklist exported: ${tracklistFile}`);
-            resolve({ success: true, outputFile, tracklistFile, message: 'Mix y tracklist exportados' });
-          } catch (err) {
-            console.error('Post-export error:', err);
-            resolve({ success: true, outputFile, message: 'Mix exportado' });
+      console.log(`Converting ${i + 1}/${songs.length}: ${song.title}`);
+
+      // Convert each song to WAV with uniform format: 44100 Hz, stereo, 16-bit
+      await new Promise((resolve, reject) => {
+        execFile(ffmpegPath, [
+          '-i', song.path,
+          '-ar', '44100',       // Sample rate: 44100 Hz
+          '-ac', '2',           // Channels: stereo
+          '-sample_fmt', 's16', // 16-bit audio
+          '-y',                 // Overwrite if exists
+          tempFile
+        ], (error, stdout, stderr) => {
+          if (error) {
+            console.error(`Error converting ${song.title}:`, error.message);
+            reject(error);
+          } else {
+            resolve();
           }
-        })
-        .on('error', (err) => {
-          console.error('FFmpeg error:', err);
-          resolve({ success: false, error: `FFmpeg: ${err.message}` });
-        })
-        .run();
+        });
+      });
+    }
+
+    // Step 2: Create concat file pointing to the normalized WAV files
+    const concatFile = path.join(tempDir, 'concat_list.txt');
+    let concatContent = '';
+    for (const tempFile of tempFiles) {
+      const safePath = tempFile.replace(/\\/g, '/').replace(/'/g, "'\\''");
+      concatContent += `file '${safePath}'\n`;
+    }
+    await fs.writeFile(concatFile, concatContent, 'utf-8');
+
+    console.log('All songs normalized. Concatenating to final MP3...');
+
+    // Step 3: Concat all normalized WAVs into final MP3
+    await new Promise((resolve, reject) => {
+      execFile(ffmpegPath, [
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', concatFile,
+        '-codec:a', 'libmp3lame',
+        '-b:a', '192k',
+        '-ar', '44100',
+        '-ac', '2',
+        '-y',
+        outputFile
+      ], (error, stdout, stderr) => {
+        if (error) {
+          console.error('FFmpeg concat error:', error.message);
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
     });
+
+    console.log('Final MP3 created successfully!');
+
+    // Step 4: Clean up temp files
+    try {
+      for (const tempFile of tempFiles) {
+        await fs.unlink(tempFile);
+      }
+      await fs.unlink(concatFile);
+      await fs.rmdir(tempDir);
+      console.log('Temp files cleaned up');
+    } catch (cleanErr) {
+      console.warn('Could not clean all temp files:', cleanErr.message);
+    }
+
+    // Step 5: Generate tracklist .txt
+    const tracklistFile = path.join(outputPath, `${mixName}_tracklist.txt`);
+    const totalDur = songs.reduce((sum, s) => sum + s.duration, 0);
+    const totalMin = Math.floor(totalDur / 60);
+    const totalSec = totalDur % 60;
+    let tracklistContent = `═══════════════════════════════════════\n`;
+    tracklistContent += `  MixMaker - ${mixName}\n`;
+    tracklistContent += `═══════════════════════════════════════\n`;
+    tracklistContent += `  Genero: ${genre || 'Sin genero'}\n`;
+    tracklistContent += `  Canciones: ${songs.length}\n`;
+    tracklistContent += `  Duracion total: ${totalMin}:${totalSec.toString().padStart(2, '0')}\n`;
+    tracklistContent += `  Fecha: ${new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}\n`;
+    tracklistContent += `═══════════════════════════════════════\n\n`;
+
+    let elapsed = 0;
+    songs.forEach((song, i) => {
+      const eMin = Math.floor(elapsed / 60);
+      const eSec = elapsed % 60;
+      const timestamp = `${eMin}:${eSec.toString().padStart(2, '0')}`;
+      const dMin = Math.floor(song.duration / 60);
+      const dSec = song.duration % 60;
+      const duration = `${dMin}:${dSec.toString().padStart(2, '0')}`;
+      tracklistContent += `  ${String(i + 1).padStart(2, '0')}. [${timestamp}] ${song.title} - ${song.artist} (${duration})\n`;
+      elapsed += song.duration;
+    });
+
+    tracklistContent += `\n═══════════════════════════════════════\n`;
+    tracklistContent += `  Generado con MixMaker v2\n`;
+    tracklistContent += `═══════════════════════════════════════\n`;
+
+    await fs.writeFile(tracklistFile, tracklistContent, 'utf-8');
+    console.log(`Tracklist exported: ${tracklistFile}`);
+    console.log('=== EXPORT COMPLETE ===');
+
+    return { success: true, outputFile, tracklistFile, message: 'Mix y tracklist exportados' };
+
   } catch (error) {
     console.error('Export mix error:', error);
     return { success: false, error: error.message };
