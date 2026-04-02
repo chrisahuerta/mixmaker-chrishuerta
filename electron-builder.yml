@@ -1,0 +1,54 @@
+appId: com.mixmaker.app
+productName: MixMaker
+directories:
+  buildResources: assets
+  output: dist
+
+files:
+  - dist/**/*
+  - node_modules/**/*
+  - public/**/*
+  - package.json
+
+extraResources:
+  - from: node_modules/ffmpeg-static/bin/darwin/x64/ffmpeg
+    to: ffmpeg
+    condition: darwin
+  - from: node_modules/ffmpeg-static/bin/win32/x64/ffmpeg.exe
+    to: ffmpeg.exe
+    condition: win32
+
+win:
+  target:
+    - nsis
+    - portable
+  certificateFile: null
+  certificatePassword: null
+  signingHashAlgorithms:
+    - sha256
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: MixMaker
+
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.music
+  hardenedRuntime: true
+  gatekeeperAssess: false
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+      type: file
+      path: null
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications

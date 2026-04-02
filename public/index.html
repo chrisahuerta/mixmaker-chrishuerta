@@ -1,43 +1,629 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MixMaker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+      color: white;
+      min-height: 100vh;
+    }
+    header {
+      background: rgba(20, 20, 30, 0.8);
+      padding: 24px 30px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+      backdrop-filter: blur(10px);
+    }
+    header h1 { font-size: 32px; }
+    header p { color: #999; margin-top: 6px; }
+    main {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .btn-primary {
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #00d4ff, #ff006e);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-secondary {
+      padding: 14px 28px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid #333;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+    .btn-random {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #ffbe0b, #fb5607);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-random:hover { opacity: 0.85; }
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      color: white;
+      font-size: 16px;
+      outline: none;
+    }
+    input:focus { border-color: #00d4ff; }
+    label { display: block; margin-bottom: 6px; color: #ccc; font-size: 14px; }
+    .song-list {
+      max-height: 350px;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+    }
+    .song-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.15s;
+      cursor: pointer;
+    }
+    .song-item:hover { background: rgba(255, 255, 255, 0.05); }
+    .song-item:last-child { border-bottom: none; }
+    .song-item.selected { background: rgba(0, 212, 255, 0.1); border-left: 3px solid #00d4ff; }
+    .song-item input[type="checkbox"] {
+      width: 18px; height: 18px; margin-right: 12px;
+      accent-color: #00d4ff; cursor: pointer;
+    }
+    .song-title { font-weight: 600; font-size: 14px; }
+    .song-artist { color: #999; font-size: 13px; }
+    .song-duration { color: #666; font-size: 12px; margin-left: auto; white-space: nowrap; }
+    .priority-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+      color: #000;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-left: 8px;
+    }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .flex-row { display: flex; gap: 12px; align-items: center; }
+    .section-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+    .mix-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 12px;
+    }
+    .export-path { margin-top: 12px; color: #00d4ff; font-size: 13px; word-break: break-all; }
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+    /* Progress bar styles */
+    .progress-container {
+      margin-top: 20px;
+      display: none;
+    }
+    .progress-container.active {
+      display: block;
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .progress-label .status { color: #00d4ff; font-weight: 600; }
+    .progress-label .detail { color: #999; font-size: 13px; }
+    .progress-bar-track {
+      width: 100%;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff006e);
+      background-size: 200% 100%;
+      border-radius: 6px;
+      transition: width 0.3s ease;
+      animation: shimmer 2s linear infinite;
+      width: 0%;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .progress-percentage {
+      text-align: center;
+      margin-top: 6px;
+      font-size: 22px;
+      font-weight: 700;
+      color: #00d4ff;
+    }
+    .progress-step-detail {
+      text-align: center;
+      margin-top: 4px;
+      color: #666;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root" style="display: flex; flex-direction: column; min-height: 100vh;"></div>
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+  <script>
+    const root = document.getElementById('root');
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-  </body>
+    let songs = [];
+    let folderPath = null;
+    let generatedMixes = [];
+    let currentStep = 'welcome';
+    let genreCounters = {};
+    let exportPath = null;
+    let prioritySongs = [];
+
+    function getNextMixName(genre) {
+      const cleanGenre = genre.trim() || 'Sin_Genero';
+      const genreKey = cleanGenre.toLowerCase();
+      if (!genreCounters[genreKey]) {
+        genreCounters[genreKey] = 1;
+      } else {
+        genreCounters[genreKey]++;
+      }
+      return `${cleanGenre}_Mix_${genreCounters[genreKey]}`;
+    }
+
+    function formatDuration(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function updateProgress(containerId, percent, statusText, detailText) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.classList.add('active');
+      const fill = container.querySelector('.progress-bar-fill');
+      const status = container.querySelector('.status');
+      const pct = container.querySelector('.progress-percentage');
+      const stepDetail = container.querySelector('.progress-step-detail');
+      if (fill) fill.style.width = percent + '%';
+      if (status) status.textContent = statusText || '';
+      if (pct) pct.textContent = Math.round(percent) + '%';
+      if (stepDetail) stepDetail.textContent = detailText || '';
+    }
+
+    function progressBarHTML(id, title) {
+      return `
+        <div class="progress-container" id="${id}">
+          <div class="progress-label">
+            <span class="status">${title}</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill"></div>
+          </div>
+          <div class="progress-percentage">0%</div>
+          <div class="progress-step-detail"></div>
+        </div>
+      `;
+    }
+
+    function render() {
+      if (currentStep === 'welcome') {
+        root.innerHTML = `
+          <header>
+            <h1>🎵 MixMaker</h1>
+            <p>Crea mixes personalizados desde tu música</p>
+          </header>
+          <main style="flex: 1; display: flex; align-items: center; justify-content: center;">
+            <div style="text-align: center;">
+              <p style="font-size: 64px; margin-bottom: 20px;">🎶</p>
+              <h2 style="margin-bottom: 12px;">Selecciona una carpeta con tu música</h2>
+              <p style="color: #999; margin-bottom: 30px;">MP3 y WAV soportados</p>
+              <button id="selectBtn" class="btn-primary" style="font-size: 18px; padding: 16px 40px;">📁 Seleccionar Carpeta</button>
+            </div>
+          </main>
+        `;
+
+        document.getElementById('selectBtn').addEventListener('click', async () => {
+          const folder = await window.electronAPI.selectMusicFolder();
+          if (folder) {
+            folderPath = folder;
+            document.getElementById('selectBtn').textContent = '⏳ Escaneando...';
+            document.getElementById('selectBtn').disabled = true;
+            const result = await window.electronAPI.scanMusicFolder(folder);
+            if (result.success) {
+              songs = result.songs;
+              prioritySongs = [];
+              currentStep = 'selecting';
+              render();
+            } else {
+              alert('Error: ' + result.error);
+              document.getElementById('selectBtn').textContent = '📁 Seleccionar Carpeta';
+              document.getElementById('selectBtn').disabled = false;
+            }
+          }
+        });
+
+      } else if (currentStep === 'selecting') {
+        const priorityCount = prioritySongs.length;
+
+        root.innerHTML = `
+          <header>
+            <h1>🎵 MixMaker</h1>
+            <p>📁 ${folderPath} — ${songs.length} canciones encontradas</p>
+          </header>
+          <main style="flex: 1; overflow-y: auto;">
+            <div class="container">
+              <div class="card">
+                <h2 style="margin-bottom: 16px;">⚙️ Configurar Mix</h2>
+                <div class="grid-3">
+                  <div>
+                    <label>¿Cuántos mixes?</label>
+                    <input type="number" id="mixCountInput" value="1" min="1" max="20" />
+                  </div>
+                  <div>
+                    <label>Canciones por mix:</label>
+                    <input type="number" id="songCountInput" value="${Math.min(songs.length, 15)}" min="1" max="${songs.length}" />
+                  </div>
+                  <div>
+                    <label>Género:</label>
+                    <input type="text" id="genreInput" value="Sin_Genero" placeholder="Ej: chill pop" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                  <div>
+                    <h2 class="section-title" style="margin-bottom: 4px;">🎵 Canciones (${songs.length})</h2>
+                    <p style="color: #999; font-size: 13px;">
+                      Selecciona hasta 5 canciones prioritarias que aparecerán al inicio del mix
+                      ${priorityCount > 0 ? ` — <span style="color: #00d4ff; font-weight: 600;">${priorityCount}/5 seleccionadas</span>` : ''}
+                    </p>
+                  </div>
+                  <div class="flex-row">
+                    ${priorityCount > 0 ? `<button id="clearPriorityBtn" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">❌ Quitar prioridad</button>` : ''}
+                    <button id="randomAllBtn" class="btn-random">🎲 Todo aleatorio</button>
+                  </div>
+                </div>
+                <div class="song-list" id="songList">
+                  ${songs.map((song, idx) => {
+                    const isPriority = prioritySongs.includes(song.id);
+                    const priorityIndex = prioritySongs.indexOf(song.id);
+                    return `
+                      <div class="song-item ${isPriority ? 'selected' : ''}" data-song-id="${song.id}" data-idx="${idx}">
+                        <input type="checkbox" ${isPriority ? 'checked' : ''} data-song-id="${song.id}" />
+                        <div style="flex: 1; min-width: 0;">
+                          <div class="song-title">
+                            ${idx + 1}. ${song.title}
+                            ${isPriority ? `<span class="priority-badge">⭐ #${priorityIndex + 1}</span>` : ''}
+                          </div>
+                          <div class="song-artist">${song.artist}</div>
+                        </div>
+                        <div class="song-duration">${formatDuration(song.duration)}</div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+
+              <div class="flex-row" style="margin-top: 8px;">
+                <button id="generateBtn" class="btn-primary" style="flex: 1;">✨ Generar Mixes</button>
+                <button id="backBtn" class="btn-secondary">↩️ Atrás</button>
+              </div>
+
+              ${progressBarHTML('generateProgress', '🎵 Generando mixes...')}
+            </div>
+          </main>
+        `;
+
+        document.querySelectorAll('#songList .song-item').forEach(item => {
+          const checkbox = item.querySelector('input[type="checkbox"]');
+          const songId = item.dataset.songId;
+
+          item.addEventListener('click', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            checkbox.checked = !checkbox.checked;
+            handleCheckbox(songId, checkbox.checked);
+          });
+
+          checkbox.addEventListener('change', (e) => {
+            handleCheckbox(songId, e.target.checked);
+          });
+        });
+
+        function handleCheckbox(songId, checked) {
+          if (checked) {
+            if (prioritySongs.length >= 5) {
+              alert('Máximo 5 canciones prioritarias. Desmarca una primero.');
+              render();
+              return;
+            }
+            if (!prioritySongs.includes(songId)) {
+              prioritySongs.push(songId);
+            }
+          } else {
+            prioritySongs = prioritySongs.filter(id => id !== songId);
+          }
+          render();
+        }
+
+        const clearBtn = document.getElementById('clearPriorityBtn');
+        if (clearBtn) {
+          clearBtn.addEventListener('click', () => {
+            prioritySongs = [];
+            render();
+          });
+        }
+
+        document.getElementById('randomAllBtn').addEventListener('click', () => {
+          prioritySongs = [];
+          doGenerate(true);
+        });
+
+        document.getElementById('generateBtn').addEventListener('click', () => {
+          doGenerate(false);
+        });
+
+        async function doGenerate(forceRandom) {
+          const mixCount = parseInt(document.getElementById('mixCountInput').value) || 1;
+          const songCount = parseInt(document.getElementById('songCountInput').value) || 15;
+          const genre = document.getElementById('genreInput').value || 'Sin_Genero';
+
+          const btn = document.getElementById('generateBtn');
+          const backBtn = document.getElementById('backBtn');
+          const randomBtn = document.getElementById('randomAllBtn');
+          if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando...'; }
+          if (backBtn) backBtn.disabled = true;
+          if (randomBtn) randomBtn.disabled = true;
+
+          generatedMixes = [];
+          genreCounters = {};
+
+          const priSongs = forceRandom ? [] : prioritySongs.map(id => songs.find(s => s.id === id)).filter(Boolean);
+
+          updateProgress('generateProgress', 0, '🎵 Generando mixes...', `Preparando ${mixCount} mix(es)...`);
+
+          for (let i = 0; i < mixCount; i++) {
+            const name = getNextMixName(genre);
+            const percent = Math.round((i / mixCount) * 100);
+            updateProgress('generateProgress', percent, '🎵 Generando mixes...', `Mix ${i + 1} de ${mixCount}: ${name}`);
+
+            await new Promise(r => setTimeout(r, 80));
+
+            const result = await window.electronAPI.generateMix({
+              selectedSongs: songs,
+              songCount: songCount,
+              genre: genre,
+              prioritySongs: priSongs,
+            });
+
+            if (result.success) {
+              generatedMixes.push({ name, ...result });
+              const donePercent = Math.round(((i + 1) / mixCount) * 100);
+              updateProgress('generateProgress', donePercent, '🎵 Generando mixes...', `Mix ${i + 1} de ${mixCount}: ${name} ✅`);
+            } else {
+              alert('Error generando mix: ' + result.error);
+              if (btn) { btn.disabled = false; btn.textContent = '✨ Generar Mixes'; }
+              if (backBtn) backBtn.disabled = false;
+              if (randomBtn) randomBtn.disabled = false;
+              return;
+            }
+          }
+
+          updateProgress('generateProgress', 100, '✅ ¡Listo!', `${mixCount} mix(es) generados`);
+          await new Promise(r => setTimeout(r, 600));
+
+          currentStep = 'preview';
+          render();
+        }
+
+        document.getElementById('backBtn').addEventListener('click', () => {
+          currentStep = 'welcome';
+          songs = [];
+          prioritySongs = [];
+          generatedMixes = [];
+          genreCounters = {};
+          render();
+        });
+
+      } else if (currentStep === 'preview') {
+        root.innerHTML = `
+          <header>
+            <h1>🎵 MixMaker</h1>
+            <p>Vista previa — ${generatedMixes.length} mix(es) generados</p>
+          </header>
+          <main style="flex: 1; overflow-y: auto;">
+            <div class="container">
+              ${generatedMixes.map((mix, idx) => `
+                <div class="mix-card">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>🎵 ${mix.name}</h3>
+                    <span style="color: #999; font-size: 13px;">${mix.songCount || mix.mix.length} canciones · ~${mix.totalDuration} min</span>
+                  </div>
+                  <p style="color: #666; font-size: 13px; margin-top: 6px;">Género: ${mix.genre}</p>
+                  <details style="margin-top: 10px;">
+                    <summary style="cursor: pointer; color: #00d4ff; font-size: 13px;">Ver canciones</summary>
+                    <div style="margin-top: 8px; padding-left: 8px;">
+                      ${mix.mix.map((s, i) => `
+                        <div style="padding: 4px 0; font-size: 13px; color: #ccc; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                          ${i + 1}. ${s.title} — <span style="color: #666;">${s.artist}</span>
+                          <span style="color: #555; margin-left: 8px;">${formatDuration(s.duration)}</span>
+                          ${i < (prioritySongs.length > 0 ? prioritySongs.length : 0) && prioritySongs.length > 0 ? '<span class="priority-badge" style="font-size: 10px;">⭐</span>' : ''}
+                        </div>
+                      `).join('')}
+                    </div>
+                  </details>
+                </div>
+              `).join('')}
+
+              <div class="flex-row" style="margin-top: 16px;">
+                <button id="proceedExportBtn" class="btn-primary" style="flex: 1;">💾 Exportar Mixes</button>
+                <button id="backPreviewBtn" class="btn-secondary">↩️ Atrás</button>
+              </div>
+            </div>
+          </main>
+        `;
+
+        document.getElementById('proceedExportBtn').addEventListener('click', () => {
+          currentStep = 'export';
+          render();
+        });
+
+        document.getElementById('backPreviewBtn').addEventListener('click', () => {
+          currentStep = 'selecting';
+          render();
+        });
+
+      } else if (currentStep === 'export') {
+        root.innerHTML = `
+          <header>
+            <h1>🎵 MixMaker</h1>
+            <p>Exportar ${generatedMixes.length} mix(es)</p>
+          </header>
+          <main style="flex: 1; display: flex; align-items: center; justify-content: center;">
+            <div class="container" style="max-width: 600px; text-align: center;">
+              <div class="card">
+                <h2 style="margin-bottom: 20px;">📁 Selecciona carpeta de exportación</h2>
+                <button id="selectExportBtn" class="btn-secondary" style="width: 100%; margin-bottom: 16px; padding: 16px;">
+                  ${exportPath ? '✅ Cambiar carpeta' : '📂 Seleccionar carpeta'}
+                </button>
+                ${exportPath ? `<p class="export-path">📂 ${exportPath}</p>` : ''}
+                <div class="flex-row" style="margin-top: 20px; justify-content: center;">
+                  <button id="exportBtn" class="btn-primary" style="flex: 1;" ${!exportPath ? 'disabled' : ''}>
+                    💾 Exportar
+                  </button>
+                  <button id="backExportBtn" class="btn-secondary">↩️ Atrás</button>
+                </div>
+
+                ${progressBarHTML('exportProgress', '💾 Exportando mixes...')}
+              </div>
+            </div>
+          </main>
+        `;
+
+        document.getElementById('selectExportBtn').addEventListener('click', async () => {
+          const folder = await window.electronAPI.selectMusicFolder();
+          if (folder) {
+            exportPath = folder;
+            render();
+          }
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', async () => {
+          if (!exportPath) {
+            alert('❌ Selecciona una carpeta de exportación');
+            return;
+          }
+
+          const btn = document.getElementById('exportBtn');
+          const selectBtn = document.getElementById('selectExportBtn');
+          const backBtn = document.getElementById('backExportBtn');
+          btn.disabled = true;
+          btn.textContent = '⏳ Exportando...';
+          if (selectBtn) selectBtn.disabled = true;
+          if (backBtn) backBtn.disabled = true;
+
+          const total = generatedMixes.length;
+          updateProgress('exportProgress', 0, '💾 Exportando mixes...', `Preparando ${total} mix(es)...`);
+
+          try {
+            for (let i = 0; i < total; i++) {
+              const mix = generatedMixes[i];
+              const percent = Math.round((i / total) * 100);
+              updateProgress('exportProgress', percent, '💾 Exportando...', `Exportando ${i + 1} de ${total}: ${mix.name}...`);
+
+              const result = await window.electronAPI.exportMix({
+                songs: mix.mix,
+                outputPath: exportPath,
+                mixName: mix.name,
+                genre: mix.genre,
+              });
+
+              if (!result.success) {
+                alert('❌ Error exportando ' + mix.name + ': ' + result.error);
+                btn.disabled = false;
+                btn.textContent = '💾 Exportar';
+                if (selectBtn) selectBtn.disabled = false;
+                if (backBtn) backBtn.disabled = false;
+                const container = document.getElementById('exportProgress');
+                if (container) container.classList.remove('active');
+                return;
+              }
+
+              const donePercent = Math.round(((i + 1) / total) * 100);
+              updateProgress('exportProgress', donePercent, '💾 Exportando...', `${mix.name} ✅ (${i + 1}/${total})`);
+            }
+
+            updateProgress('exportProgress', 100, '✅ ¡Exportación completa!', `${total} mix(es) guardados`);
+            await new Promise(r => setTimeout(r, 1200));
+
+            alert(`✅ ¡${total} mix(es) exportados!\n📁 ${exportPath}`);
+            generatedMixes = [];
+            genreCounters = {};
+            exportPath = null;
+            prioritySongs = [];
+            currentStep = 'welcome';
+            render();
+          } catch (error) {
+            alert('❌ Error: ' + error.message);
+            btn.disabled = false;
+            btn.textContent = '💾 Exportar';
+            if (selectBtn) selectBtn.disabled = false;
+            if (backBtn) backBtn.disabled = false;
+          }
+        });
+
+        document.getElementById('backExportBtn').addEventListener('click', () => {
+          currentStep = 'preview';
+          render();
+        });
+      }
+    }
+
+    setTimeout(() => {
+      if (window.electronAPI) {
+        console.log('✅ electronAPI lista');
+        render();
+      } else {
+        console.error('❌ electronAPI no disponible');
+        root.innerHTML = '<div style="color: red; padding: 40px; text-align: center; font-size: 18px;">Error: electronAPI no disponible. Asegúrate de ejecutar con Electron.</div>';
+      }
+    }, 500);
+  </script>
+</body>
 </html>

@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MixMaker - Generador de Mixes de Música</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+      color: white;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #root {
+      width: 100%;
+      height: 100vh;
+    }
+
+    header {
+      background: rgba(20, 20, 30, 0.8);
+      padding: 30px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+      backdrop-filter: blur(10px);
+    }
+
+    header h1 {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    main {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .songs-list {
+      max-height: 400px;
+      overflow-y: auto;
+      margin: 20px 0;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 0;
+    }
+
+    .song-item {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .song-item:last-child {
+      border-bottom: none;
+    }
+
+    .song-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .song-info {
+      flex: 1;
+    }
+
+    .song-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .song-artist {
+      color: #999;
+      font-size: 12px;
+    }
+
+    .song-duration {
+      color: #00d4ff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      width: 100%;
+      margin: 8px 0;
+    }
+
+    input[type="text"]::placeholder,
+    input[type="number"]::placeholder {
+      color: #666;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+      margin: 8px 4px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #00d4ff, #ff006e);
+      color: black;
+      flex: 1;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid #333;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .info-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px 0;
+      color: #00d4ff;
+      font-size: 12px;
+    }
+
+    .error-box {
+      background: rgba(255, 0, 110, 0.1);
+      border: 1px solid rgba(255, 0, 110, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px 0;
+      color: #ff006e;
+      font-size: 12px;
+    }
+
+    .mix-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .mix-card h3 {
+      margin-bottom: 8px;
+    }
+
+    .mix-card p {
+      color: #999;
+      font-size: 12px;
+      margin: 4px 0;
+    }
+
+    .loading {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    const root = document.getElementById('root');
+
+    // Estado global
+    let songs = [];
+    let selectedSongs = [];
+    let musicFolderPath = null;
+    let exportPath = null; // 👈 CRUCIAL: guardar carpeta de exportación
+    let generatedMixes = [];
+    let currentStep = 'welcome';
+    let genreCounters = {};
+    let numMixes = 1;
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function getNextMixName(genre) {
+      const cleanGenre = genre.trim() || 'Sin_Genero';
+      const genreKey = cleanGenre.toLowerCase();
+
+      if (!genreCounters[genreKey]) {
+        genreCounters[genreKey] = 1;
+      } else {
+        genreCounters[genreKey]++;
+      }
+
+      return `${cleanGenre}_Mix_${genreCounters[genreKey]}`;
+    }
+
+    function render() {
+      if (currentStep === 'welcome') {
+        root.innerHTML = `
+          <div style="width: 100%; height: 100vh; background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%); color: white; display: flex; flex-direction: column;">
+            <header>
+              <h1>🎵 MixMaker</h1>
+              <p style="color: #999;">Crea mixes personalizados de tus canciones favoritas</p>
+            </header>
+            <main style="flex: 1; display: flex; align-items: center; justify-content: center;">
+              <div class="container" style="text-align: center;">
+                <p style="color: #999; margin-bottom: 20px; font-size: 16px;">Bienvenido a MixMaker. Selecciona una carpeta con tus canciones para comenzar.</p>
+                <button id="selectBtn" class="btn-primary" style="width: 200px; padding: 16px;">📁 Seleccionar Carpeta</button>
+              </div>
+            </main>
+          </div>
+        `;
+
+        document.getElementById('selectBtn').addEventListener('click', async () => {
+          const folder = await window.electronAPI.selectMusicFolder();
+          if (folder) {
+            musicFolderPath = folder;
+            const result = await window.electronAPI.scanMusicFolder(folder);
+            if (result.success) {
+              songs = result.songs;
+              selectedSongs = Array.from({ length: songs.length }, (_, i) => i);
+              currentStep = 'selecting';
+              render();
+            } else {
+              alert('❌ Error: ' + result.error);
+            }
+          }
+        });
+      } else if (currentStep === 'selecting') {
+        root.innerHTML = `
+          <div style="width: 100%; height: 100vh; background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%); color: white; display: flex; flex-direction: column;">
+            <header>
+              <h1>🎵 MixMaker</h1>
+              <p style="color: #999;">${songs.length} canciones encontradas</p>
+            </header>
+            <main>
+              <div class="container">
+                <p style="margin-bottom: 12px; color: #999;">Selecciona las canciones para tu mix:</p>
+                <div class="songs-list">
+                  ${songs
+                    .map(
+                      (song, idx) => `
+                    <div class="song-item">
+                      <input type="checkbox" class="song-check" data-id="${idx}" ${selectedSongs.includes(idx) ? 'checked' : ''}>
+                      <div class="song-info">
+                        <div class="song-title">${song.title}</div>
+                        <div class="song-artist">${song.artist}</div>
+                      </div>
+                      <div class="song-duration">${formatTime(song.duration)}</div>
+                    </div>
+                  `
+                    )
+                    .join('')}
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px;">
+                  <div>
+                    <label style="color: #999; font-size: 12px;">Número de Mixes:</label>
+                    <input type="number" id="numMixesInput" value="${numMixes}" min="1" max="10" />
+                  </div>
+                  <div>
+                    <label style="color: #999; font-size: 12px;">Duración (minutos):</label>
+                    <input type="number" id="durationInput" value="10" min="1" max="120" />
+                  </div>
+                </div>
+
+                <div>
+                  <label style="color: #999; font-size: 12px;">Género:</label>
+                  <input type="text" id="genreInput" placeholder="ej: Rock, Pop, Jazz..." />
+                </div>
+
+                <div class="button-group">
+                  <button id="generateBtn" class="btn-primary">⚡ Generar Mixes</button>
+                  <button id="backBtn" class="btn-secondary">↩️ Atrás</button>
+                </div>
+              </div>
+            </main>
+          </div>
+        `;
+
+        // Event listeners
+        document.querySelectorAll('.song-check').forEach((cb) => {
+          cb.addEventListener('change', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            if (e.target.checked) {
+              if (!selectedSongs.includes(id)) selectedSongs.push(id);
+            } else {
+              selectedSongs = selectedSongs.filter((i) => i !== id);
+            }
+          });
+        });
+
+        document.getElementById('numMixesInput').addEventListener('change', (e) => {
+          numMixes = Math.max(1, Math.min(10, parseInt(e.target.value) || 1));
+        });
+
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+          const duration = parseInt(document.getElementById('durationInput').value) || 10;
+          const genre = document.getElementById('genreInput').value || 'Sin género';
+
+          if (selectedSongs.length === 0) {
+            alert('❌ Selecciona al menos una canción');
+            return;
+          }
+
+          const selectedSongsData = selectedSongs.map((i) => songs[i]);
+
+          // Generar múltiples mixes
+          generatedMixes = [];
+          for (let i = 0; i < numMixes; i++) {
+            const result = await window.electronAPI.generateMix({
+              selectedSongs: selectedSongsData,
+              targetDuration: duration,
+              genre,
+            });
+
+            if (result.success) {
+              const name = getNextMixName(genre);
+              generatedMixes.push({ name, ...result });
+            } else {
+              alert('❌ Error: ' + result.error);
+              return;
+            }
+          }
+
+          currentStep = 'preview';
+          render();
+        });
+
+        document.getElementById('backBtn').addEventListener('click', () => {
+          currentStep = 'welcome';
+          songs = [];
+          selectedSongs = [];
+          musicFolderPath = null;
+          render();
+        });
+      } else if (currentStep === 'preview') {
+        root.innerHTML = `
+          <div style="width: 100%; height: 100vh; background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%); color: white; display: flex; flex-direction: column;">
+            <header>
+              <h1>🎵 MixMaker - Vista Previa</h1>
+              <p style="color: #999;">Mixes generados: ${generatedMixes.length}</p>
+            </header>
+            <main>
+              <div class="container">
+                ${generatedMixes
+                  .map(
+                    (mix) => `
+                  <div class="mix-card">
+                    <h3>🎵 ${mix.name}</h3>
+                    <p>⏱️ Duración: <strong>${mix.totalDuration}</strong> minutos</p>
+                    <p>🎶 Canciones: <strong>${mix.mix.length}</strong></p>
+                    <p>🎸 Género: <strong>${mix.genre}</strong></p>
+                  </div>
+                `
+                  )
+                  .join('')}
+
+                <div class="button-group">
+                  <button id="proceedExportBtn" class="btn-primary">✅ Proceder a Exportar</button>
+                  <button id="backPreviewBtn" class="btn-secondary">↩️ Atrás</button>
+                </div>
+              </div>
+            </main>
+          </div>
+        `;
+
+        document.getElementById('proceedExportBtn').addEventListener('click', () => {
+          exportPath = null; // Reset export path
+          currentStep = 'export';
+          render();
+        });
+
+        document.getElementById('backPreviewBtn').addEventListener('click', () => {
+          currentStep = 'welcome';
+          songs = [];
+          selectedSongs = [];
+          generatedMixes = [];
+          genreCounters = {};
+          musicFolderPath = null;
+          render();
+        });
+      } else if (currentStep === 'export') {
+        root.innerHTML = `
+          <div style="width: 100%; height: 100vh; background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%); color: white; display: flex; flex-direction: column;">
+            <header>
+              <h1>🎵 MixMaker - Exportar</h1>
+              <p style="color: #999;">Paso final: selecciona dónde guardar tus mixes</p>
+            </header>
+            <main>
+              <div class="container">
+                <p style="margin-bottom: 20px; color: #999;">Exportarás <strong>${generatedMixes.length}</strong> mix(es).</p>
+
+                ${!exportPath ? `<div class="error-box">⚠️ Debes seleccionar una carpeta de exportación</div>` : `<div class="info-box">📁 Carpeta: ${exportPath}</div>`}
+
+                <div class="button-group" style="flex-direction: column;">
+                  <button id="selectExportBtn" class="btn-primary" style="background: linear-gradient(135deg, #ffbe0b, #ff006e); margin-bottom: 12px;">📁 Seleccionar Carpeta de Exportación</button>
+                  <button id="exportBtn" class="btn-primary" ${!exportPath ? 'disabled' : ''}>💾 Exportar Mixes</button>
+                </div>
+
+                <div class="button-group">
+                  <button id="backFromExportBtn" class="btn-secondary" style="flex: 1;">↩️ Atrás</button>
+                </div>
+              </div>
+            </main>
+          </div>
+        `;
+
+        document.getElementById('selectExportBtn').addEventListener('click', async () => {
+          const folder = await window.electronAPI.selectMusicFolder();
+          if (folder) {
+            exportPath = folder;
+            render();
+          }
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', async () => {
+          if (!exportPath) {
+            alert('❌ Selecciona una carpeta de exportación primero');
+            return;
+          }
+
+          const exportBtn = document.getElementById('exportBtn');
+          exportBtn.disabled = true;
+          exportBtn.textContent = '⏳ Exportando...';
+
+          try {
+            for (const mix of generatedMixes) {
+              console.log(`Exportando: ${mix.name} → ${exportPath}`);
+              const result = await window.electronAPI.exportMix({
+                songs: mix.mix,
+                outputPath: exportPath, // 👈 Se pasa correctamente
+                mixName: mix.name,
+                genre: mix.genre,
+              });
+
+              console.log('Export result:', result);
+
+              if (!result.success) {
+                alert(`❌ Error al exportar ${mix.name}: ${result.error}`);
+                exportBtn.disabled = false;
+                exportBtn.textContent = '💾 Exportar Mixes';
+                return;
+              }
+            }
+
+            alert(`✅ ¡${generatedMixes.length} mix(es) exportados exitosamente!\n📁 ${exportPath}`);
+            generatedMixes = [];
+            genreCounters = {};
+            exportPath = null;
+            musicFolderPath = null;
+            currentStep = 'welcome';
+            render();
+          } catch (error) {
+            alert(`❌ Error: ${error.message}`);
+            exportBtn.disabled = false;
+            exportBtn.textContent = '💾 Exportar Mixes';
+          }
+        });
+
+        document.getElementById('backFromExportBtn').addEventListener('click', () => {
+          currentStep = 'preview';
+          exportPath = null;
+          render();
+        });
+      }
+    }
+
+    // Iniciar cuando electronAPI esté lista
+    setTimeout(() => {
+      if (window.electronAPI) {
+        console.log('✅ electronAPI disponible');
+        render();
+      } else {
+        console.error('❌ electronAPI no disponible');
+        root.innerHTML = '<div style="color: red; padding: 20px; text-align: center;">Error: electronAPI no disponible. Abre devtools (Ctrl+Shift+I) para ver más detalles.</div>';
+      }
+    }, 500);
+  </script>
+</body>
+</html>
