@@ -5,180 +5,659 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MixMaker</title>
   <style>
+    /* ============================================
+       SAN FRANCISCO FONT - Apple System Font
+       Uses -apple-system on macOS, falls back to
+       SF Pro on other platforms
+    ============================================ */
+    @font-face {
+      font-family: 'SF Pro Display';
+      src: local('.AppleSystemUIFont'), local('SF Pro Display');
+      font-weight: 100 900;
+    }
+    @font-face {
+      font-family: 'SF Pro Text';
+      src: local('.AppleSystemUIFont'), local('SF Pro Text');
+      font-weight: 100 900;
+    }
+
+    /* ============================================
+       APPLE HIG - CSS VARIABLES
+       Light and Dark mode tokens
+    ============================================ */
+    :root {
+      /* Light mode (default) */
+      --bg-primary: #FFFFFF;
+      --bg-secondary: #F2F2F7;
+      --bg-tertiary: #FFFFFF;
+      --bg-grouped: #F2F2F7;
+      --bg-elevated: #FFFFFF;
+
+      --label-primary: #000000;
+      --label-secondary: rgba(60, 60, 67, 0.6);
+      --label-tertiary: rgba(60, 60, 67, 0.3);
+      --label-quaternary: rgba(60, 60, 67, 0.18);
+
+      --separator: rgba(60, 60, 67, 0.12);
+      --separator-opaque: #C6C6C8;
+
+      --fill-primary: rgba(120, 120, 128, 0.2);
+      --fill-secondary: rgba(120, 120, 128, 0.16);
+      --fill-tertiary: rgba(120, 120, 128, 0.12);
+      --fill-quaternary: rgba(120, 120, 128, 0.08);
+
+      --accent: #007AFF;
+      --accent-hover: #0066DD;
+      --accent-active: #0055BB;
+      --green: #34C759;
+      --orange: #FF9500;
+      --red: #FF3B30;
+      --purple: #AF52DE;
+      --teal: #5AC8FA;
+
+      --material-thin: rgba(255, 255, 255, 0.7);
+      --material-regular: rgba(255, 255, 255, 0.82);
+      --material-thick: rgba(255, 255, 255, 0.92);
+
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+
+      --titlebar-height: 52px;
+    }
+
+    /* Dark mode */
+    [data-theme="dark"] {
+      --bg-primary: #000000;
+      --bg-secondary: #1C1C1E;
+      --bg-tertiary: #2C2C2E;
+      --bg-grouped: #1C1C1E;
+      --bg-elevated: #2C2C2E;
+
+      --label-primary: #FFFFFF;
+      --label-secondary: rgba(235, 235, 245, 0.6);
+      --label-tertiary: rgba(235, 235, 245, 0.3);
+      --label-quaternary: rgba(235, 235, 245, 0.18);
+
+      --separator: rgba(84, 84, 88, 0.6);
+      --separator-opaque: #38383A;
+
+      --fill-primary: rgba(120, 120, 128, 0.36);
+      --fill-secondary: rgba(120, 120, 128, 0.32);
+      --fill-tertiary: rgba(120, 120, 128, 0.24);
+      --fill-quaternary: rgba(120, 120, 128, 0.18);
+
+      --accent: #0A84FF;
+      --accent-hover: #409CFF;
+      --accent-active: #64B5F6;
+      --green: #30D158;
+      --orange: #FF9F0A;
+      --red: #FF453A;
+      --purple: #BF5AF2;
+      --teal: #64D2FF;
+
+      --material-thin: rgba(44, 44, 46, 0.7);
+      --material-regular: rgba(44, 44, 46, 0.82);
+      --material-thick: rgba(44, 44, 46, 0.92);
+
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2);
+      --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ============================================
+       BASE RESET & TYPOGRAPHY
+    ============================================ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-      color: white;
+      font-family: -apple-system, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      background: var(--bg-grouped);
+      color: var(--label-primary);
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
-    header {
-      background: rgba(20, 20, 30, 0.8);
-      padding: 24px 30px;
-      text-align: center;
-      border-bottom: 1px solid #333;
-      backdrop-filter: blur(10px);
+
+    /* ============================================
+       TITLEBAR (drag region for hidden title bar)
+    ============================================ */
+    .titlebar {
+      height: var(--titlebar-height);
+      -webkit-app-region: drag;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--material-thick);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 0.5px solid var(--separator);
     }
-    header h1 { font-size: 32px; }
-    header p { color: #999; margin-top: 6px; }
+    .titlebar-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--label-primary);
+      letter-spacing: -0.01em;
+    }
+    .titlebar-controls {
+      position: absolute;
+      right: 16px;
+      -webkit-app-region: no-drag;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ============================================
+       THEME TOGGLE - Apple-style switch
+    ============================================ */
+    .theme-toggle {
+      width: 44px;
+      height: 26px;
+      border-radius: 13px;
+      background: var(--fill-primary);
+      border: none;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.3s ease;
+      -webkit-app-region: no-drag;
+    }
+    .theme-toggle.active {
+      background: var(--accent);
+    }
+    .theme-toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 22px;
+      height: 22px;
+      border-radius: 11px;
+      background: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.1);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .theme-toggle.active::after {
+      transform: translateX(18px);
+    }
+    .theme-icon {
+      font-size: 12px;
+      color: var(--label-secondary);
+      user-select: none;
+    }
+
+    /* ============================================
+       LAYOUT
+    ============================================ */
     main {
       flex: 1;
-      padding: 30px;
+      padding: 20px;
       overflow-y: auto;
     }
-    .container { max-width: 960px; margin: 0 auto; }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* ============================================
+       GROUPED TABLE STYLE (Apple HIG)
+    ============================================ */
+    .section-header {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--label-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      padding: 0 16px;
+      margin-bottom: 8px;
+      margin-top: 28px;
+    }
+    .section-header:first-child { margin-top: 0; }
+
     .card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 24px;
-      padding: 24px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
       margin-bottom: 20px;
     }
-    .btn-primary {
-      padding: 14px 28px;
-      background: linear-gradient(135deg, #00d4ff, #ff006e);
-      color: #000;
-      border: none;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 16px;
-      cursor: pointer;
-      transition: opacity 0.2s;
+
+    .card-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      min-height: 44px;
+      gap: 12px;
     }
-    .btn-primary:hover { opacity: 0.9; }
-    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-secondary {
-      padding: 14px 28px;
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      border: 1px solid #333;
-      border-radius: 12px;
-      font-weight: 600;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background 0.2s;
+    .card-row + .card-row {
+      border-top: 0.5px solid var(--separator);
+      margin-left: 16px;
+      padding-left: 0;
     }
-    .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
-    .btn-random {
-      padding: 10px 20px;
-      background: linear-gradient(135deg, #ffbe0b, #fb5607);
-      color: #000;
-      border: none;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-      transition: opacity 0.2s;
+    .card-row-label {
+      font-size: 15px;
+      color: var(--label-primary);
+      min-width: 120px;
+      flex-shrink: 0;
     }
-    .btn-random:hover { opacity: 0.85; }
+    .card-row-value {
+      flex: 1;
+      text-align: right;
+    }
+
+    /* ============================================
+       FORM INPUTS - Apple style
+    ============================================ */
     input[type="number"], input[type="text"] {
       width: 100%;
-      padding: 12px 16px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 10px;
-      color: white;
-      font-size: 16px;
+      padding: 10px 12px;
+      background: var(--fill-quaternary);
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      color: var(--label-primary);
+      font-family: inherit;
+      font-size: 15px;
       outline: none;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      text-align: right;
     }
-    input:focus { border-color: #00d4ff; }
-    label { display: block; margin-bottom: 6px; color: #ccc; font-size: 14px; }
+    input:focus {
+      border-color: var(--accent);
+      background: var(--bg-elevated);
+    }
+    input::placeholder { color: var(--label-tertiary); }
+
+    label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--label-secondary);
+      font-size: 13px;
+    }
+
+    /* ============================================
+       BUTTONS - Apple HIG style
+    ============================================ */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 24px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+      gap: 6px;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 24px;
+      background: var(--fill-tertiary);
+      color: var(--accent);
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+      gap: 6px;
+    }
+    .btn-secondary:hover { background: var(--fill-secondary); }
+    .btn-secondary:active { transform: scale(0.98); }
+    .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-text {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      background: none;
+      color: var(--accent);
+      border: none;
+      font-family: inherit;
+      font-weight: 500;
+      font-size: 15px;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      gap: 4px;
+      transition: background 0.15s ease;
+    }
+    .btn-text:hover { background: var(--fill-quaternary); }
+
+    .btn-orange {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 18px;
+      background: var(--orange);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity 0.15s ease, transform 0.1s ease;
+      gap: 4px;
+    }
+    .btn-orange:hover { opacity: 0.85; }
+    .btn-orange:active { transform: scale(0.98); }
+
+    /* ============================================
+       SONG LIST
+    ============================================ */
     .song-list {
-      max-height: 350px;
+      max-height: 400px;
       overflow-y: auto;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
+      -webkit-overflow-scrolling: touch;
     }
     .song-item {
       display: flex;
       align-items: center;
       padding: 10px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      transition: background 0.15s;
+      min-height: 48px;
       cursor: pointer;
+      transition: background 0.12s ease;
+      gap: 12px;
     }
-    .song-item:hover { background: rgba(255, 255, 255, 0.05); }
-    .song-item:last-child { border-bottom: none; }
-    .song-item.selected { background: rgba(0, 212, 255, 0.1); border-left: 3px solid #00d4ff; }
-    .song-item input[type="checkbox"] {
-      width: 18px; height: 18px; margin-right: 12px;
-      accent-color: #00d4ff; cursor: pointer;
+    .song-item + .song-item {
+      border-top: 0.5px solid var(--separator);
     }
-    .song-title { font-weight: 600; font-size: 14px; }
-    .song-artist { color: #999; font-size: 13px; }
-    .song-duration { color: #666; font-size: 12px; margin-left: auto; white-space: nowrap; }
-    .priority-badge {
-      display: inline-block;
-      background: linear-gradient(135deg, #00d4ff, #7b2ff7);
-      color: #000;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 6px;
-      margin-left: 8px;
+    .song-item:hover { background: var(--fill-quaternary); }
+    .song-item:active { background: var(--fill-tertiary); }
+    .song-item.selected {
+      background: rgba(0, 122, 255, 0.06);
     }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-    .flex-row { display: flex; gap: 12px; align-items: center; }
-    .section-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
-    .mix-card {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 12px;
+    [data-theme="dark"] .song-item.selected {
+      background: rgba(10, 132, 255, 0.12);
     }
-    .export-path { margin-top: 12px; color: #00d4ff; font-size: 13px; word-break: break-all; }
 
-    /* Progress bar styles */
+    .song-checkbox {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      border: 2px solid var(--separator-opaque);
+      background: var(--bg-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+    .song-item.selected .song-checkbox {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .song-checkbox-check {
+      display: none;
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .song-item.selected .song-checkbox-check {
+      display: block;
+    }
+
+    .song-info { flex: 1; min-width: 0; }
+    .song-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--label-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .song-artist {
+      font-size: 13px;
+      color: var(--label-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .song-duration {
+      font-size: 13px;
+      color: var(--label-tertiary);
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+    .priority-badge {
+      display: inline-flex;
+      align-items: center;
+      background: var(--accent);
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+
+    /* ============================================
+       SEARCH BAR
+    ============================================ */
+    .search-bar {
+      padding: 8px 16px;
+      border-bottom: 0.5px solid var(--separator);
+    }
+    .search-input {
+      width: 100%;
+      padding: 8px 12px;
+      padding-left: 32px;
+      background: var(--fill-quaternary);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: var(--label-primary);
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+    }
+    .search-input::placeholder { color: var(--label-tertiary); }
+
+    /* ============================================
+       MIX PREVIEW CARDS
+    ============================================ */
+    .mix-card {
+      padding: 16px;
+    }
+    .mix-card + .mix-card {
+      border-top: 0.5px solid var(--separator);
+    }
+    .mix-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mix-card-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--label-primary);
+    }
+    .mix-card-meta {
+      font-size: 13px;
+      color: var(--label-secondary);
+    }
+    .mix-card-genre {
+      font-size: 13px;
+      color: var(--label-tertiary);
+      margin-top: 2px;
+    }
+
+    details summary {
+      cursor: pointer;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 8px;
+      list-style: none;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    details summary::before { content: 'Ver canciones ›'; }
+    details[open] summary::before { content: 'Ocultar canciones ›'; }
+
+    .mix-tracklist {
+      margin-top: 10px;
+    }
+    .mix-track {
+      padding: 6px 0;
+      font-size: 13px;
+      color: var(--label-secondary);
+      border-bottom: 0.5px solid var(--separator);
+      display: flex;
+      gap: 8px;
+    }
+    .mix-track:last-child { border-bottom: none; }
+    .mix-track-num { color: var(--label-tertiary); min-width: 22px; font-variant-numeric: tabular-nums; }
+    .mix-track-title { font-weight: 500; color: var(--label-primary); }
+    .mix-track-artist { color: var(--label-tertiary); }
+    .mix-track-dur { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--label-tertiary); }
+
+    /* ============================================
+       PROGRESS BAR - Apple style
+    ============================================ */
     .progress-container {
       margin-top: 20px;
       display: none;
+      padding: 0 16px 16px;
     }
-    .progress-container.active {
-      display: block;
-    }
+    .progress-container.active { display: block; }
     .progress-label {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 8px;
-      font-size: 14px;
+      font-size: 13px;
     }
-    .progress-label .status { color: #00d4ff; font-weight: 600; }
-    .progress-label .detail { color: #999; font-size: 13px; }
+    .progress-label .status {
+      color: var(--accent);
+      font-weight: 600;
+    }
     .progress-bar-track {
       width: 100%;
-      height: 12px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
+      height: 6px;
+      background: var(--fill-tertiary);
+      border-radius: 3px;
       overflow: hidden;
     }
     .progress-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, #00d4ff, #7b2ff7, #ff006e);
-      background-size: 200% 100%;
-      border-radius: 6px;
+      background: var(--accent);
+      border-radius: 3px;
       transition: width 0.3s ease;
-      animation: shimmer 2s linear infinite;
       width: 0%;
-    }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
     }
     .progress-percentage {
       text-align: center;
-      margin-top: 6px;
-      font-size: 22px;
+      margin-top: 8px;
+      font-size: 28px;
       font-weight: 700;
-      color: #00d4ff;
+      color: var(--label-primary);
+      font-variant-numeric: tabular-nums;
     }
     .progress-step-detail {
       text-align: center;
-      margin-top: 4px;
-      color: #666;
-      font-size: 12px;
+      margin-top: 2px;
+      color: var(--label-secondary);
+      font-size: 13px;
     }
+
+    /* ============================================
+       EXPORT PATH
+    ============================================ */
+    .export-path {
+      margin-top: 10px;
+      color: var(--accent);
+      font-size: 13px;
+      word-break: break-all;
+    }
+
+    /* ============================================
+       ACTION BAR (bottom sticky)
+    ============================================ */
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      padding: 16px;
+      background: var(--material-thick);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 0.5px solid var(--separator);
+      position: sticky;
+      bottom: 0;
+    }
+    .action-bar .btn-primary { flex: 1; }
+
+    /* ============================================
+       WELCOME SCREEN
+    ============================================ */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 30px;
+      flex: 1;
+    }
+    .welcome-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 122, 255, 0.2);
+    }
+    .welcome h2 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .welcome p {
+      color: var(--label-secondary);
+      font-size: 15px;
+      margin-bottom: 28px;
+    }
+
+    /* Utility */
+    .flex-row { display: flex; gap: 10px; align-items: center; }
+    .w-full { width: 100%; }
+    .mt-4 { margin-top: 16px; }
+    .text-center { text-align: center; }
+    .text-secondary { color: var(--label-secondary); }
+    .text-sm { font-size: 13px; }
+
+    /* Scrollbar (subtle Apple style) */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--fill-primary); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--fill-secondary); }
   </style>
 </head>
 <body>
@@ -187,6 +666,9 @@
   <script>
     const root = document.getElementById('root');
 
+    // ============================================
+    // STATE
+    // ============================================
     let songs = [];
     let folderPath = null;
     let generatedMixes = [];
@@ -194,9 +676,26 @@
     let genreCounters = {};
     let exportPath = null;
     let prioritySongs = [];
+    let searchQuery = '';
 
+    // Persisted config values (fixes the bug where selecting songs resets these)
+    let configMixCount = 1;
+    let configSongCount = 15;
+    let configGenre = '';
+
+    // Theme
+    let isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    function applyTheme() {
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    }
+    applyTheme();
+
+    // ============================================
+    // HELPERS
+    // ============================================
     function getNextMixName(genre) {
-      const cleanGenre = genre.trim() || 'Sin_Genero';
+      const cleanGenre = genre.trim() || 'Mix';
       const genreKey = cleanGenre.toLowerCase();
       if (!genreCounters[genreKey]) {
         genreCounters[genreKey] = 1;
@@ -210,6 +709,13 @@
       const m = Math.floor(seconds / 60);
       const s = seconds % 60;
       return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function formatTimestamp(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
 
     function updateProgress(containerId, percent, statusText, detailText) {
@@ -241,96 +747,141 @@
       `;
     }
 
+    function titlebarHTML(subtitle) {
+      return `
+        <div class="titlebar">
+          <span class="titlebar-title">${subtitle ? 'MixMaker — ' + subtitle : 'MixMaker'}</span>
+          <div class="titlebar-controls">
+            <span class="theme-icon">${isDark ? '☀️' : '🌙'}</span>
+            <button class="theme-toggle ${isDark ? 'active' : ''}" id="themeToggle" title="Cambiar tema"></button>
+          </div>
+        </div>
+      `;
+    }
+
+    function bindThemeToggle() {
+      const btn = document.getElementById('themeToggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          isDark = !isDark;
+          applyTheme();
+          render();
+        });
+      }
+    }
+
+    // Save config values from inputs before re-render
+    function saveConfigFromInputs() {
+      const mc = document.getElementById('mixCountInput');
+      const sc = document.getElementById('songCountInput');
+      const gi = document.getElementById('genreInput');
+      if (mc) configMixCount = parseInt(mc.value) || 1;
+      if (sc) configSongCount = parseInt(sc.value) || 15;
+      if (gi) configGenre = gi.value;
+    }
+
+    // ============================================
+    // RENDER
+    // ============================================
     function render() {
       if (currentStep === 'welcome') {
         root.innerHTML = `
-          <header>
-            <h1>🎵 MixMaker</h1>
-            <p>Crea mixes personalizados desde tu música</p>
-          </header>
-          <main style="flex: 1; display: flex; align-items: center; justify-content: center;">
-            <div style="text-align: center;">
-              <p style="font-size: 64px; margin-bottom: 20px;">🎶</p>
-              <h2 style="margin-bottom: 12px;">Selecciona una carpeta con tu música</h2>
-              <p style="color: #999; margin-bottom: 30px;">MP3 y WAV soportados</p>
-              <button id="selectBtn" class="btn-primary" style="font-size: 18px; padding: 16px 40px;">📁 Seleccionar Carpeta</button>
-            </div>
-          </main>
+          ${titlebarHTML('')}
+          <div class="welcome" style="flex: 1;">
+            <div class="welcome-icon">🎵</div>
+            <h2>MixMaker</h2>
+            <p>Selecciona una carpeta con tu música<br>MP3 y WAV soportados</p>
+            <button id="selectBtn" class="btn-primary" style="font-size: 17px; padding: 14px 36px;">
+              Seleccionar Carpeta
+            </button>
+          </div>
         `;
+
+        bindThemeToggle();
 
         document.getElementById('selectBtn').addEventListener('click', async () => {
           const folder = await window.electronAPI.selectMusicFolder();
           if (folder) {
             folderPath = folder;
-            document.getElementById('selectBtn').textContent = '⏳ Escaneando...';
-            document.getElementById('selectBtn').disabled = true;
+            const btn = document.getElementById('selectBtn');
+            btn.textContent = 'Escaneando...';
+            btn.disabled = true;
             const result = await window.electronAPI.scanMusicFolder(folder);
             if (result.success) {
               songs = result.songs;
               prioritySongs = [];
+              configSongCount = Math.min(songs.length, 15);
               currentStep = 'selecting';
               render();
             } else {
               alert('Error: ' + result.error);
-              document.getElementById('selectBtn').textContent = '📁 Seleccionar Carpeta';
-              document.getElementById('selectBtn').disabled = false;
+              btn.textContent = 'Seleccionar Carpeta';
+              btn.disabled = false;
             }
           }
         });
 
       } else if (currentStep === 'selecting') {
         const priorityCount = prioritySongs.length;
+        const filteredSongs = searchQuery
+          ? songs.filter(s =>
+              s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              s.artist.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+          : songs;
 
         root.innerHTML = `
-          <header>
-            <h1>🎵 MixMaker</h1>
-            <p>📁 ${folderPath} — ${songs.length} canciones encontradas</p>
-          </header>
-          <main style="flex: 1; overflow-y: auto;">
+          ${titlebarHTML(folderPath.split('/').pop() + ' — ' + songs.length + ' canciones')}
+          <main style="flex: 1; overflow-y: auto; padding-bottom: 80px;">
             <div class="container">
+
+              <div class="section-header">Configuración</div>
               <div class="card">
-                <h2 style="margin-bottom: 16px;">⚙️ Configurar Mix</h2>
-                <div class="grid-3">
-                  <div>
-                    <label>¿Cuántos mixes?</label>
-                    <input type="number" id="mixCountInput" value="1" min="1" max="20" />
+                <div class="card-row">
+                  <span class="card-row-label">Mixes</span>
+                  <div class="card-row-value">
+                    <input type="number" id="mixCountInput" value="${configMixCount}" min="1" max="20" style="max-width: 80px;" />
                   </div>
-                  <div>
-                    <label>Canciones por mix:</label>
-                    <input type="number" id="songCountInput" value="${Math.min(songs.length, 15)}" min="1" max="${songs.length}" />
+                </div>
+                <div class="card-row">
+                  <span class="card-row-label">Canciones por mix</span>
+                  <div class="card-row-value">
+                    <input type="number" id="songCountInput" value="${configSongCount}" min="1" max="${songs.length}" style="max-width: 80px;" />
                   </div>
-                  <div>
-                    <label>Género:</label>
-                    <input type="text" id="genreInput" value="Sin_Genero" placeholder="Ej: chill pop" />
+                </div>
+                <div class="card-row">
+                  <span class="card-row-label">Género</span>
+                  <div class="card-row-value">
+                    <input type="text" id="genreInput" value="${configGenre}" placeholder="Ej: deep house" style="max-width: 200px;" />
                   </div>
                 </div>
               </div>
 
-              <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                  <div>
-                    <h2 class="section-title" style="margin-bottom: 4px;">🎵 Canciones (${songs.length})</h2>
-                    <p style="color: #999; font-size: 13px;">
-                      Selecciona hasta 5 canciones prioritarias que aparecerán al inicio del mix
-                      ${priorityCount > 0 ? ` — <span style="color: #00d4ff; font-weight: 600;">${priorityCount}/5 seleccionadas</span>` : ''}
-                    </p>
-                  </div>
-                  <div class="flex-row">
-                    ${priorityCount > 0 ? `<button id="clearPriorityBtn" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">❌ Quitar prioridad</button>` : ''}
-                    <button id="randomAllBtn" class="btn-random">🎲 Todo aleatorio</button>
-                  </div>
+              <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Canciones${priorityCount > 0 ? ' — ' + priorityCount + '/5 prioritarias' : ''}</span>
+                <div style="display: flex; gap: 8px;">
+                  ${priorityCount > 0 ? '<button id="clearPriorityBtn" class="btn-text" style="font-size: 13px; padding: 4px 8px; text-transform: none;">Limpiar</button>' : ''}
+                </div>
+              </div>
+
+              <div class="card" style="padding: 0;">
+                <div class="search-bar">
+                  <input type="text" class="search-input" id="searchInput" placeholder="Buscar canciones..." value="${searchQuery}" />
                 </div>
                 <div class="song-list" id="songList">
-                  ${songs.map((song, idx) => {
+                  ${filteredSongs.map((song, idx) => {
                     const isPriority = prioritySongs.includes(song.id);
                     const priorityIndex = prioritySongs.indexOf(song.id);
+                    const globalIdx = songs.indexOf(song);
                     return `
-                      <div class="song-item ${isPriority ? 'selected' : ''}" data-song-id="${song.id}" data-idx="${idx}">
-                        <input type="checkbox" ${isPriority ? 'checked' : ''} data-song-id="${song.id}" />
-                        <div style="flex: 1; min-width: 0;">
+                      <div class="song-item ${isPriority ? 'selected' : ''}" data-song-id="${song.id}">
+                        <div class="song-checkbox">
+                          <span class="song-checkbox-check">✓</span>
+                        </div>
+                        <div class="song-info">
                           <div class="song-title">
-                            ${idx + 1}. ${song.title}
-                            ${isPriority ? `<span class="priority-badge">⭐ #${priorityIndex + 1}</span>` : ''}
+                            ${globalIdx + 1}. ${song.title}
+                            ${isPriority ? `<span class="priority-badge">#${priorityIndex + 1}</span>` : ''}
                           </div>
                           <div class="song-artist">${song.artist}</div>
                         </div>
@@ -341,73 +892,81 @@
                 </div>
               </div>
 
-              <div class="flex-row" style="margin-top: 8px;">
-                <button id="generateBtn" class="btn-primary" style="flex: 1;">✨ Generar Mixes</button>
-                <button id="backBtn" class="btn-secondary">↩️ Atrás</button>
-              </div>
-
-              ${progressBarHTML('generateProgress', '🎵 Generando mixes...')}
+              ${progressBarHTML('generateProgress', 'Generando mixes...')}
             </div>
           </main>
+
+          <div class="action-bar">
+            <button id="backBtn" class="btn-secondary">Atrás</button>
+            <button id="randomAllBtn" class="btn-orange">Aleatorio</button>
+            <button id="generateBtn" class="btn-primary">Generar Mixes</button>
+          </div>
         `;
 
+        bindThemeToggle();
+
+        // Search
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+          searchQuery = e.target.value;
+          saveConfigFromInputs();
+          render();
+          // Restore focus to search
+          const si = document.getElementById('searchInput');
+          if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
+        });
+
+        // Song selection
         document.querySelectorAll('#songList .song-item').forEach(item => {
-          const checkbox = item.querySelector('input[type="checkbox"]');
-          const songId = item.dataset.songId;
-
-          item.addEventListener('click', (e) => {
-            if (e.target.tagName === 'INPUT') return;
-            checkbox.checked = !checkbox.checked;
-            handleCheckbox(songId, checkbox.checked);
-          });
-
-          checkbox.addEventListener('change', (e) => {
-            handleCheckbox(songId, e.target.checked);
+          item.addEventListener('click', () => {
+            saveConfigFromInputs(); // <-- FIX: save config before re-render
+            const songId = item.dataset.songId;
+            const isPriority = prioritySongs.includes(songId);
+            if (isPriority) {
+              prioritySongs = prioritySongs.filter(id => id !== songId);
+            } else {
+              if (prioritySongs.length >= 5) {
+                alert('Máximo 5 canciones prioritarias.');
+                return;
+              }
+              prioritySongs.push(songId);
+            }
+            render();
           });
         });
 
-        function handleCheckbox(songId, checked) {
-          if (checked) {
-            if (prioritySongs.length >= 5) {
-              alert('Máximo 5 canciones prioritarias. Desmarca una primero.');
-              render();
-              return;
-            }
-            if (!prioritySongs.includes(songId)) {
-              prioritySongs.push(songId);
-            }
-          } else {
-            prioritySongs = prioritySongs.filter(id => id !== songId);
-          }
-          render();
-        }
-
+        // Clear priority
         const clearBtn = document.getElementById('clearPriorityBtn');
         if (clearBtn) {
           clearBtn.addEventListener('click', () => {
+            saveConfigFromInputs();
             prioritySongs = [];
             render();
           });
         }
 
+        // Random
         document.getElementById('randomAllBtn').addEventListener('click', () => {
+          saveConfigFromInputs();
           prioritySongs = [];
           doGenerate(true);
         });
 
+        // Generate
         document.getElementById('generateBtn').addEventListener('click', () => {
+          saveConfigFromInputs();
           doGenerate(false);
         });
 
         async function doGenerate(forceRandom) {
-          const mixCount = parseInt(document.getElementById('mixCountInput').value) || 1;
-          const songCount = parseInt(document.getElementById('songCountInput').value) || 15;
-          const genre = document.getElementById('genreInput').value || 'Sin_Genero';
+          saveConfigFromInputs();
+          const mixCount = configMixCount;
+          const songCount = configSongCount;
+          const genre = configGenre || 'Mix';
 
           const btn = document.getElementById('generateBtn');
           const backBtn = document.getElementById('backBtn');
           const randomBtn = document.getElementById('randomAllBtn');
-          if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando...'; }
+          if (btn) { btn.disabled = true; btn.textContent = 'Generando...'; }
           if (backBtn) backBtn.disabled = true;
           if (randomBtn) randomBtn.disabled = true;
 
@@ -416,12 +975,12 @@
 
           const priSongs = forceRandom ? [] : prioritySongs.map(id => songs.find(s => s.id === id)).filter(Boolean);
 
-          updateProgress('generateProgress', 0, '🎵 Generando mixes...', `Preparando ${mixCount} mix(es)...`);
+          updateProgress('generateProgress', 0, 'Generando mixes...', `Preparando ${mixCount} mix(es)...`);
 
           for (let i = 0; i < mixCount; i++) {
             const name = getNextMixName(genre);
             const percent = Math.round((i / mixCount) * 100);
-            updateProgress('generateProgress', percent, '🎵 Generando mixes...', `Mix ${i + 1} de ${mixCount}: ${name}`);
+            updateProgress('generateProgress', percent, 'Generando mixes...', `Mix ${i + 1} de ${mixCount}: ${name}`);
 
             await new Promise(r => setTimeout(r, 80));
 
@@ -435,18 +994,18 @@
             if (result.success) {
               generatedMixes.push({ name, ...result });
               const donePercent = Math.round(((i + 1) / mixCount) * 100);
-              updateProgress('generateProgress', donePercent, '🎵 Generando mixes...', `Mix ${i + 1} de ${mixCount}: ${name} ✅`);
+              updateProgress('generateProgress', donePercent, 'Generando...', `${name} ✓`);
             } else {
-              alert('Error generando mix: ' + result.error);
-              if (btn) { btn.disabled = false; btn.textContent = '✨ Generar Mixes'; }
+              alert('Error: ' + result.error);
+              if (btn) { btn.disabled = false; btn.textContent = 'Generar Mixes'; }
               if (backBtn) backBtn.disabled = false;
               if (randomBtn) randomBtn.disabled = false;
               return;
             }
           }
 
-          updateProgress('generateProgress', 100, '✅ ¡Listo!', `${mixCount} mix(es) generados`);
-          await new Promise(r => setTimeout(r, 600));
+          updateProgress('generateProgress', 100, '¡Listo!', `${mixCount} mix(es) generados`);
+          await new Promise(r => setTimeout(r, 500));
 
           currentStep = 'preview';
           render();
@@ -458,52 +1017,66 @@
           prioritySongs = [];
           generatedMixes = [];
           genreCounters = {};
+          searchQuery = '';
+          configMixCount = 1;
+          configSongCount = 15;
+          configGenre = '';
           render();
         });
 
       } else if (currentStep === 'preview') {
         root.innerHTML = `
-          <header>
-            <h1>🎵 MixMaker</h1>
-            <p>Vista previa — ${generatedMixes.length} mix(es) generados</p>
-          </header>
-          <main style="flex: 1; overflow-y: auto;">
+          ${titlebarHTML(generatedMixes.length + ' mix(es) generados')}
+          <main style="flex: 1; overflow-y: auto; padding-bottom: 80px;">
             <div class="container">
-              ${generatedMixes.map((mix, idx) => `
-                <div class="mix-card">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3>🎵 ${mix.name}</h3>
-                    <span style="color: #999; font-size: 13px;">${mix.songCount || mix.mix.length} canciones · ~${mix.totalDuration} min</span>
-                  </div>
-                  <p style="color: #666; font-size: 13px; margin-top: 6px;">Género: ${mix.genre}</p>
-                  <details style="margin-top: 10px;">
-                    <summary style="cursor: pointer; color: #00d4ff; font-size: 13px;">Ver canciones</summary>
-                    <div style="margin-top: 8px; padding-left: 8px;">
-                      ${mix.mix.map((s, i) => `
-                        <div style="padding: 4px 0; font-size: 13px; color: #ccc; border-bottom: 1px solid rgba(255,255,255,0.03);">
-                          ${i + 1}. ${s.title} — <span style="color: #666;">${s.artist}</span>
-                          <span style="color: #555; margin-left: 8px;">${formatDuration(s.duration)}</span>
-                          ${i < (prioritySongs.length > 0 ? prioritySongs.length : 0) && prioritySongs.length > 0 ? '<span class="priority-badge" style="font-size: 10px;">⭐</span>' : ''}
-                        </div>
-                      `).join('')}
+              <div class="section-header">Vista Previa</div>
+              <div class="card" style="padding: 0;">
+                ${generatedMixes.map((mix, idx) => `
+                  <div class="mix-card">
+                    <div class="mix-card-header">
+                      <span class="mix-card-title">${mix.name}</span>
+                      <span class="mix-card-meta">${mix.songCount || mix.mix.length} canciones · ~${mix.totalDuration} min</span>
                     </div>
-                  </details>
-                </div>
-              `).join('')}
-
-              <div class="flex-row" style="margin-top: 16px;">
-                <button id="proceedExportBtn" class="btn-primary" style="flex: 1;">💾 Exportar Mixes</button>
-                <button id="backPreviewBtn" class="btn-secondary">↩️ Atrás</button>
+                    <div class="mix-card-genre">${mix.genre}</div>
+                    <details>
+                      <summary></summary>
+                      <div class="mix-tracklist">
+                        ${(() => {
+                          let elapsed = 0;
+                          return mix.mix.map((s, i) => {
+                            const ts = formatTimestamp(elapsed);
+                            elapsed += s.duration;
+                            return `
+                              <div class="mix-track">
+                                <span class="mix-track-num">${i + 1}</span>
+                                <span style="color: var(--label-tertiary); font-variant-numeric: tabular-nums; font-size: 12px;">${ts}</span>
+                                <span class="mix-track-title">${s.title}</span>
+                                <span class="mix-track-artist">— ${s.artist}</span>
+                                <span class="mix-track-dur">${formatDuration(s.duration)}</span>
+                              </div>
+                            `;
+                          }).join('');
+                        })()}
+                      </div>
+                    </details>
+                  </div>
+                `).join('')}
               </div>
             </div>
           </main>
+
+          <div class="action-bar">
+            <button id="backPreviewBtn" class="btn-secondary">Atrás</button>
+            <button id="proceedExportBtn" class="btn-primary">Exportar Mixes</button>
+          </div>
         `;
+
+        bindThemeToggle();
 
         document.getElementById('proceedExportBtn').addEventListener('click', () => {
           currentStep = 'export';
           render();
         });
-
         document.getElementById('backPreviewBtn').addEventListener('click', () => {
           currentStep = 'selecting';
           render();
@@ -511,30 +1084,32 @@
 
       } else if (currentStep === 'export') {
         root.innerHTML = `
-          <header>
-            <h1>🎵 MixMaker</h1>
-            <p>Exportar ${generatedMixes.length} mix(es)</p>
-          </header>
+          ${titlebarHTML('Exportar')}
           <main style="flex: 1; display: flex; align-items: center; justify-content: center;">
-            <div class="container" style="max-width: 600px; text-align: center;">
+            <div class="container" style="max-width: 500px;">
+              <div class="section-header">Destino</div>
               <div class="card">
-                <h2 style="margin-bottom: 20px;">📁 Selecciona carpeta de exportación</h2>
-                <button id="selectExportBtn" class="btn-secondary" style="width: 100%; margin-bottom: 16px; padding: 16px;">
-                  ${exportPath ? '✅ Cambiar carpeta' : '📂 Seleccionar carpeta'}
-                </button>
-                ${exportPath ? `<p class="export-path">📂 ${exportPath}</p>` : ''}
-                <div class="flex-row" style="margin-top: 20px; justify-content: center;">
-                  <button id="exportBtn" class="btn-primary" style="flex: 1;" ${!exportPath ? 'disabled' : ''}>
-                    💾 Exportar
+                <div class="card-row" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                  <button id="selectExportBtn" class="btn-secondary w-full">
+                    ${exportPath ? 'Cambiar Carpeta' : 'Seleccionar Carpeta'}
                   </button>
-                  <button id="backExportBtn" class="btn-secondary">↩️ Atrás</button>
+                  ${exportPath ? `<p class="export-path">${exportPath}</p>` : ''}
                 </div>
 
-                ${progressBarHTML('exportProgress', '💾 Exportando mixes...')}
+                ${progressBarHTML('exportProgress', 'Exportando mixes...')}
+              </div>
+
+              <div class="flex-row mt-4">
+                <button id="backExportBtn" class="btn-secondary">Atrás</button>
+                <button id="exportBtn" class="btn-primary" style="flex: 1;" ${!exportPath ? 'disabled' : ''}>
+                  Exportar ${generatedMixes.length} Mix(es)
+                </button>
               </div>
             </div>
           </main>
         `;
+
+        bindThemeToggle();
 
         document.getElementById('selectExportBtn').addEventListener('click', async () => {
           const folder = await window.electronAPI.selectMusicFolder();
@@ -545,27 +1120,24 @@
         });
 
         document.getElementById('exportBtn').addEventListener('click', async () => {
-          if (!exportPath) {
-            alert('❌ Selecciona una carpeta de exportación');
-            return;
-          }
+          if (!exportPath) return;
 
           const btn = document.getElementById('exportBtn');
           const selectBtn = document.getElementById('selectExportBtn');
           const backBtn = document.getElementById('backExportBtn');
           btn.disabled = true;
-          btn.textContent = '⏳ Exportando...';
+          btn.textContent = 'Exportando...';
           if (selectBtn) selectBtn.disabled = true;
           if (backBtn) backBtn.disabled = true;
 
           const total = generatedMixes.length;
-          updateProgress('exportProgress', 0, '💾 Exportando mixes...', `Preparando ${total} mix(es)...`);
+          updateProgress('exportProgress', 0, 'Exportando...', `Preparando ${total} mix(es)...`);
 
           try {
             for (let i = 0; i < total; i++) {
               const mix = generatedMixes[i];
               const percent = Math.round((i / total) * 100);
-              updateProgress('exportProgress', percent, '💾 Exportando...', `Exportando ${i + 1} de ${total}: ${mix.name}...`);
+              updateProgress('exportProgress', percent, 'Exportando...', `${i + 1} de ${total}: ${mix.name}`);
 
               const result = await window.electronAPI.exportMix({
                 songs: mix.mix,
@@ -575,9 +1147,9 @@
               });
 
               if (!result.success) {
-                alert('❌ Error exportando ' + mix.name + ': ' + result.error);
+                alert('Error: ' + mix.name + ': ' + result.error);
                 btn.disabled = false;
-                btn.textContent = '💾 Exportar';
+                btn.textContent = `Exportar ${total} Mix(es)`;
                 if (selectBtn) selectBtn.disabled = false;
                 if (backBtn) backBtn.disabled = false;
                 const container = document.getElementById('exportProgress');
@@ -586,23 +1158,27 @@
               }
 
               const donePercent = Math.round(((i + 1) / total) * 100);
-              updateProgress('exportProgress', donePercent, '💾 Exportando...', `${mix.name} ✅ (${i + 1}/${total})`);
+              updateProgress('exportProgress', donePercent, 'Exportando...', `${mix.name} ✓ (${i + 1}/${total})`);
             }
 
-            updateProgress('exportProgress', 100, '✅ ¡Exportación completa!', `${total} mix(es) guardados`);
-            await new Promise(r => setTimeout(r, 1200));
+            updateProgress('exportProgress', 100, '¡Listo!', `${total} mix(es) exportados`);
+            await new Promise(r => setTimeout(r, 1000));
 
-            alert(`✅ ¡${total} mix(es) exportados!\n📁 ${exportPath}`);
+            alert(`¡${total} mix(es) exportados!\n${exportPath}`);
             generatedMixes = [];
             genreCounters = {};
             exportPath = null;
             prioritySongs = [];
+            searchQuery = '';
+            configMixCount = 1;
+            configSongCount = 15;
+            configGenre = '';
             currentStep = 'welcome';
             render();
           } catch (error) {
-            alert('❌ Error: ' + error.message);
+            alert('Error: ' + error.message);
             btn.disabled = false;
-            btn.textContent = '💾 Exportar';
+            btn.textContent = `Exportar ${total} Mix(es)`;
             if (selectBtn) selectBtn.disabled = false;
             if (backBtn) backBtn.disabled = false;
           }
@@ -615,13 +1191,16 @@
       }
     }
 
+    // ============================================
+    // INIT
+    // ============================================
     setTimeout(() => {
       if (window.electronAPI) {
-        console.log('✅ electronAPI lista');
+        console.log('electronAPI ready');
         render();
       } else {
-        console.error('❌ electronAPI no disponible');
-        root.innerHTML = '<div style="color: red; padding: 40px; text-align: center; font-size: 18px;">Error: electronAPI no disponible. Asegúrate de ejecutar con Electron.</div>';
+        console.error('electronAPI not available');
+        root.innerHTML = '<div style="color: var(--red); padding: 40px; text-align: center; font-size: 17px;">Error: electronAPI no disponible.</div>';
       }
     }, 500);
   </script>
