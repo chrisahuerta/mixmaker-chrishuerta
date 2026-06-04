@@ -1,41 +1,50 @@
 {
-  "name": "mixmaker",
-  "version": "2.0.0",
+  "name": "7-playlist-studio",
+  "version": "3.1.0",
   "private": true,
-  "description": "MixMaker - Crea mixes de música MP3/WAV personalizados",
+  "description": "7 Playlist Studio — Diseña mixes de música a partir de tus carpetas locales (MP3/WAV).",
   "author": "Christian Huerta",
   "main": "public/electron.js",
   "homepage": "./",
   "dependencies": {
     "electron-is-dev": "^2.0.0",
-    "fluent-ffmpeg": "^2.1.3",
     "ffmpeg-static": "^5.2.0",
     "ffprobe-static": "^3.1.0",
-    "uuid": "^9.0.0",
+    "fluent-ffmpeg": "^2.1.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
+    "uuid": "^9.0.0",
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
     "concurrently": "^8.2.0",
-    "wait-on": "^7.0.1",
-    "electron": "^27.0.0",
-    "electron-builder": "^24.6.4"
+    "electron": "^27.3.11",
+    "electron-builder": "^24.6.4",
+    "wait-on": "^7.0.1"
   },
   "scripts": {
     "react-start": "react-scripts start",
     "react-build": "react-scripts build",
     "electron-start": "wait-on http://localhost:3000 && electron .",
     "electron-dev": "concurrently \"npm run react-start\" \"wait-on http://localhost:3000 && electron .\"",
+    "fetch-win-ffmpeg": "node scripts/fetch-windows-ffmpeg.js",
     "build": "npm run react-build && electron-builder",
     "build:mac": "npm run react-build && electron-builder --mac",
-    "build:win": "npm run react-build && electron-builder --win",
-    "build:all": "npm run react-build && electron-builder --mac --win"
+    "build:win": "npm run fetch-win-ffmpeg && npm run react-build && electron-builder --win",
+    "build:all": "npm run fetch-win-ffmpeg && npm run react-build && electron-builder --mac --win",
+    "build:7ps:mac": "bash build-7ps.sh mac",
+    "build:7ps:win": "bash build-7ps.sh win",
+    "build:7ps:all": "bash build-7ps.sh all",
+    "build:ps:mac": "bash build-ps.sh mac",
+    "build:ps:win": "bash build-ps.sh win",
+    "build:ps:all": "bash build-ps.sh all",
+    "build:both:mac": "bash build-7ps.sh mac && bash build-ps.sh mac",
+    "build:both:all": "bash build-7ps.sh all && bash build-ps.sh all"
   },
   "build": {
-    "appId": "com.christianhuerta.mixmaker",
-    "productName": "MixMaker",
+    "appId": "com.christianhuerta.sevenplayliststudio",
+    "productName": "7 Playlist Studio",
     "directories": {
       "buildResources": "build-resources",
       "output": "dist"
@@ -50,7 +59,10 @@
       {
         "from": "node_modules/ffmpeg-static",
         "to": "ffmpeg-static",
-        "filter": ["ffmpeg", "ffmpeg.exe"]
+        "filter": [
+          "ffmpeg",
+          "ffmpeg.exe"
+        ]
       },
       {
         "from": "node_modules/ffprobe-static/bin",
@@ -59,27 +71,42 @@
     ],
     "mac": {
       "category": "public.app-category.music",
+      "icon": "build-resources/icon.png",
       "target": [
         {
           "target": "dmg",
-          "arch": ["arm64", "x64"]
+          "arch": [
+            "arm64",
+            "x64"
+          ]
         }
       ],
       "hardenedRuntime": true,
       "gatekeeperAssess": false
     },
     "dmg": {
-      "title": "MixMaker",
+      "title": "7 Playlist Studio",
       "contents": [
-        { "x": 130, "y": 220 },
-        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     },
     "win": {
+      "icon": "build-resources/icon.ico",
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -89,14 +116,24 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "MixMaker"
+      "shortcutName": "7 Playlist Studio"
     }
   },
   "eslintConfig": {
-    "extends": ["react-app"]
+    "extends": [
+      "react-app"
+    ]
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
-    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
