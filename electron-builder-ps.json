@@ -1,0 +1,64 @@
+{
+  "appId": "com.christianhuerta.playliststudio",
+  "productName": "Playlist Studio",
+  "extraMetadata": {
+    "main": "public/electron-ps.js"
+  },
+  "directories": {
+    "buildResources": "build-resources-ps",
+    "output": "dist-ps"
+  },
+  "files": [
+    "build/**/*",
+    "public/electron-ps.js",
+    "public/preload.js",
+    "node_modules/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "node_modules/ffmpeg-static",
+      "to": "ffmpeg-static",
+      "filter": ["ffmpeg", "ffmpeg.exe"]
+    },
+    {
+      "from": "node_modules/ffprobe-static/bin",
+      "to": "ffprobe-bin"
+    }
+  ],
+  "mac": {
+    "category": "public.app-category.music",
+    "icon": "build-resources-ps/icon.png",
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["arm64", "x64"]
+      }
+    ],
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false
+  },
+  "dmg": {
+    "title": "Playlist Studio",
+    "contents": [
+      { "x": 130, "y": 220 },
+      { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+    ]
+  },
+  "win": {
+    "icon": "build-resources-ps/icon.ico",
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Playlist Studio"
+  }
+}
