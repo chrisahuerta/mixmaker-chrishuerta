@@ -1,0 +1,71 @@
+name: Build Windows Installer – Playlist Studio
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build-windows-ps:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          # Ensure ffmpeg-static downloads the Windows binary on install
+          npm_config_platform: win32
+          npm_config_arch: x64
+
+      - name: Verify ffmpeg.exe is present
+        shell: bash
+        run: |
+          if [ ! -f "node_modules/ffmpeg-static/ffmpeg.exe" ]; then
+            echo "ffmpeg.exe not found — running fetch script..."
+            node scripts/fetch-windows-ffmpeg.js
+          fi
+          ls -lh node_modules/ffmpeg-static/ffmpeg.exe
+
+      - name: Build Playlist Studio Windows installer
+        shell: bash
+        run: bash build-ps.sh win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: List build output
+        shell: bash
+        run: ls -la dist-ps/
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: playlist-studio-windows-installer
+          path: |
+            dist-ps/*.exe
+            dist-ps/*.exe.blockmap
+            dist-ps/latest.yml
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create GitHub Release on tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist-ps/*.exe
+            dist-ps/*.exe.blockmap
+            dist-ps/latest.yml
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
